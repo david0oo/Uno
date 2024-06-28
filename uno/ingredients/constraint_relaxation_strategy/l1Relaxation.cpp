@@ -20,9 +20,10 @@ l1Relaxation::l1Relaxation(const Model& model, const Options& options) :
       // call delegating constructor
       l1Relaxation(model,
             // create the l1 feasibility problem (objective multiplier = 0)
-            l1RelaxedProblem(model, 0., options.get_double("l1_constraint_violation_coefficient")),
+            l1RelaxedProblem(model, 0., options.get_double("l1_constraint_violation_coefficient"), 0., nullptr),
             // create the l1 relaxed problem
-            l1RelaxedProblem(model, options.get_double("l1_relaxation_initial_parameter"), options.get_double("l1_constraint_violation_coefficient")),
+            l1RelaxedProblem(model, options.get_double("l1_relaxation_initial_parameter"), options.get_double("l1_constraint_violation_coefficient"),
+               0., nullptr),
             options) {
 }
 

@@ -21,7 +21,7 @@ public:
    explicit BarrierParameterUpdateStrategy(const Options& options);
    [[nodiscard]] double get_barrier_parameter() const;
    void set_barrier_parameter(double new_barrier_parameter);
-   [[nodiscard]] bool update_barrier_parameter(const OptimizationProblem& problem, const Iterate& current_iterate);
+   [[nodiscard]] bool update_barrier_parameter(const OptimizationProblem& problem, Iterate& current_iterate);
 
 protected:
    double barrier_parameter;

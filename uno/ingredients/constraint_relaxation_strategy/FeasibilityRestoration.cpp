@@ -15,7 +15,7 @@ FeasibilityRestoration::FeasibilityRestoration(const Model& model, const Options
       // call delegating constructor
       FeasibilityRestoration(model, OptimalityProblem(model),
             // create the (restoration phase) feasibility problem (objective multiplier = 0)
-            l1RelaxedProblem(model, 0., options.get_double("l1_constraint_violation_coefficient")),
+            l1RelaxedProblem(model, 0., options.get_double("l1_constraint_violation_coefficient"), 0., nullptr),
             options) {
 }
 
@@ -33,7 +33,9 @@ FeasibilityRestoration::FeasibilityRestoration(const Model& model, OptimalityPro
       optimality_problem(std::forward<OptimalityProblem>(optimality_problem)),
       feasibility_problem(std::forward<l1RelaxedProblem>(feasibility_problem)),
       linear_feasibility_tolerance(options.get_double("tolerance")),
-      switch_to_optimality_requires_linearized_feasibility(options.get_bool("switch_to_optimality_requires_linearized_feasibility")) {
+      switch_to_optimality_requires_linearized_feasibility(options.get_bool("switch_to_optimality_requires_linearized_feasibility")),
+      reference_optimality_primals(optimality_problem.number_variables) {
+   this->feasibility_problem.set_proximal_center(this->reference_optimality_primals.data());
 }
 
 void FeasibilityRestoration::initialize(Statistics& statistics, Iterate& initial_iterate, const Options& options) {
@@ -101,8 +103,10 @@ void FeasibilityRestoration::switch_to_feasibility_problem(Statistics& statistic
    this->current_phase = Phase::FEASIBILITY_RESTORATION;
    this->globalization_strategy->register_current_progress(current_iterate.progress);
    this->subproblem->initialize_feasibility_problem(this->feasibility_problem, current_iterate);
-   // save the progress of the current point upon switching
+   // save the current point (progress and primals) upon switching
    this->reference_optimality_progress = current_iterate.progress;
+   this->reference_optimality_primals = current_iterate.primals;
+   this->feasibility_problem.set_proximal_multiplier(this->subproblem->proximal_coefficient(current_iterate));
 
    current_iterate.set_number_variables(this->feasibility_problem.number_variables);
    this->subproblem->set_elastic_variable_values(this->feasibility_problem, current_iterate);

@@ -39,6 +39,10 @@ void InequalityConstrainedMethod::set_elastic_variable_values(const l1RelaxedPro
    });
 }
 
+double InequalityConstrainedMethod::proximal_coefficient(const Iterate& /*current_iterate*/) const {
+   return 0.;
+}
+
 void InequalityConstrainedMethod::exit_feasibility_problem(const OptimizationProblem& /*problem*/, Iterate& /*trial_iterate*/) {
    // do nothing
 }

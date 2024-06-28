@@ -18,7 +18,8 @@
 
 class l1RelaxedProblem: public OptimizationProblem {
 public:
-   l1RelaxedProblem(const Model& model, double objective_multiplier, double constraint_violation_coefficient);
+   l1RelaxedProblem(const Model& model, double objective_multiplier, double constraint_violation_coefficient, double proximal_coefficient,
+         double const* proximal_center);
 
    [[nodiscard]] double get_objective_multiplier() const override;
    void evaluate_objective_gradient(Iterate& iterate, SparseVector<double>& objective_gradient) const override;
@@ -45,32 +46,41 @@ public:
 
    // parameterization
    void set_objective_multiplier(double new_objective_multiplier);
-
+   void set_proximal_multiplier(double new_proximal_coefficient);
+   void set_proximal_center(double const* new_proximal_center);
    void set_elastic_variable_values(Iterate& iterate, const std::function<void(Iterate&, size_t, size_t, double)>& elastic_setting_function) const;
 
 protected:
    double objective_multiplier;
    const double constraint_violation_coefficient;
+   double proximal_coefficient;
    ElasticVariables elastic_variables;
+   double const* proximal_center;
    const Concatenation<const Collection<size_t>&, ForwardRange> lower_bounded_variables; // model variables + elastic variables
    const Concatenation<const Collection<size_t>&, ForwardRange> single_lower_bounded_variables; // model variables + elastic variables
 
    // delegating constructor
-   l1RelaxedProblem(const Model& model, ElasticVariables&& elastic_variables, double objective_multiplier, double constraint_violation_coefficient);
+   l1RelaxedProblem(const Model& model, ElasticVariables&& elastic_variables, double objective_multiplier, double constraint_violation_coefficient,
+         double proximal_coefficient, double const* proximal_center);
 };
 
-inline l1RelaxedProblem::l1RelaxedProblem(const Model& model, double objective_multiplier, double constraint_violation_coefficient):
+// public constructor
+inline l1RelaxedProblem::l1RelaxedProblem(const Model& model, double objective_multiplier, double constraint_violation_coefficient,
+      double proximal_coefficient, double const* proximal_center):
    // call delegating constructor
-   l1RelaxedProblem(model, ElasticVariables::generate(model), objective_multiplier, constraint_violation_coefficient) {
+   l1RelaxedProblem(model, ElasticVariables::generate(model), objective_multiplier, constraint_violation_coefficient, proximal_coefficient,
+         proximal_center) {
 }
 
 // private delegating constructor
 inline l1RelaxedProblem::l1RelaxedProblem(const Model& model, ElasticVariables&& elastic_variables, double objective_multiplier,
-         double constraint_violation_coefficient):
+         double constraint_violation_coefficient, double proximal_coefficient, double const* proximal_center):
       OptimizationProblem(model, model.number_variables + elastic_variables.size(), model.number_constraints),
       objective_multiplier(objective_multiplier),
       constraint_violation_coefficient(constraint_violation_coefficient),
+      proximal_coefficient(proximal_coefficient),
       elastic_variables(std::forward<ElasticVariables>(elastic_variables)),
+      proximal_center(proximal_center),
       // lower bounded variables are the model variables + the elastic variables
       lower_bounded_variables(concatenate(this->model.get_lower_bounded_variables(), Range(model.number_variables,
             model.number_variables + this->elastic_variables.size()))),
@@ -94,12 +104,21 @@ inline void l1RelaxedProblem::evaluate_objective_gradient(Iterate& iterate, Spar
       objective_gradient.clear();
    }
 
-   // elastic contribution
+   // constraint violation (through elastic variables) contribution
    for (const auto [_, elastic_index]: this->elastic_variables.positive) {
       objective_gradient.insert(elastic_index, this->constraint_violation_coefficient);
    }
    for (const auto [_, elastic_index]: this->elastic_variables.negative) {
       objective_gradient.insert(elastic_index, this->constraint_violation_coefficient);
+   }
+
+   // proximal contribution
+   if (this->proximal_center != nullptr && this->proximal_coefficient != 0.) {
+      for (size_t variable_index: Range(this->model.number_variables)) {
+         const double scaling = std::min(1., 1./std::abs(this->proximal_center[variable_index]));
+         const double proximal_term = this->proximal_coefficient * scaling * scaling * (iterate.primals[variable_index] - this->proximal_center[variable_index]);
+         objective_gradient.insert(variable_index, proximal_term);
+      }
    }
 }
 
@@ -132,6 +151,15 @@ inline void l1RelaxedProblem::evaluate_lagrangian_hessian(const Vector<double>& 
       SymmetricMatrix<double>& hessian) const {
    this->model.evaluate_lagrangian_hessian(x, this->objective_multiplier, multipliers, hessian);
 
+   // proximal contribution
+   if (this->proximal_center != nullptr && this->proximal_coefficient != 0.) {
+      for (size_t variable_index: Range(this->model.number_variables)) {
+         const double scaling = std::min(1., 1./std::abs(this->proximal_center[variable_index]));
+         const double proximal_term = this->proximal_coefficient * scaling * scaling;
+         hessian.insert(proximal_term, variable_index, variable_index);
+      }
+   }
+
    // extend the dimension of the Hessian by finalizing the remaining columns (note: the elastics do not enter the Hessian)
    for (size_t constraint_index: Range(this->model.number_variables, this->number_variables)) {
       hessian.finalize_column(constraint_index);
@@ -156,11 +184,11 @@ inline double l1RelaxedProblem::complementarity_error(const Vector<double>& prim
    const VectorExpression constraint_complementarity(Range(constraints.size()), [&](size_t constraint_index) {
       // violated constraints
       if (constraints[constraint_index] < this->constraint_lower_bound(constraint_index)) { // lower violated
-         return (this->constraint_violation_coefficient - multipliers.constraints[constraint_index]) * (constraints[constraint_index] -
+         return (1. - multipliers.constraints[constraint_index]/this->constraint_violation_coefficient) * (constraints[constraint_index] -
                this->constraint_lower_bound(constraint_index));
       }
       else if (this->constraint_upper_bound(constraint_index) < constraints[constraint_index]) { // upper violated
-         return (this->constraint_violation_coefficient + multipliers.constraints[constraint_index]) * (constraints[constraint_index] -
+         return (1. + multipliers.constraints[constraint_index]/this->constraint_violation_coefficient) * (constraints[constraint_index] -
                this->constraint_upper_bound(constraint_index));
       }
       // satisfied constraints
@@ -241,6 +269,14 @@ inline size_t l1RelaxedProblem::number_hessian_nonzeros() const {
 inline void l1RelaxedProblem::set_objective_multiplier(double new_objective_multiplier) {
    assert(0. <= new_objective_multiplier && "The objective multiplier should be non-negative");
    this->objective_multiplier = new_objective_multiplier;
+}
+
+inline void l1RelaxedProblem::set_proximal_multiplier(double new_proximal_coefficient) {
+   this->proximal_coefficient = new_proximal_coefficient;
+}
+
+inline void l1RelaxedProblem::set_proximal_center(double const* new_proximal_center) {
+   this->proximal_center = new_proximal_center;
 }
 
 inline void l1RelaxedProblem::set_elastic_variable_values(Iterate& iterate, const std::function<void(Iterate&, size_t, size_t, double)>&
