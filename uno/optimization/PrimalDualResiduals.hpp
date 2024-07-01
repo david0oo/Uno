@@ -11,7 +11,9 @@ public:
    double KKT_stationarity{INF<double>};
    double FJ_stationarity{INF<double>};
    double feasibility_stationarity{INF<double>};
-   double infeasibility{INF<double>};
+
+   double primal_feasibility{INF<double>};
+
    double complementarity{INF<double>};
    double feasibility_complementarity{INF<double>};
 
