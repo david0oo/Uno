@@ -181,7 +181,7 @@ void PrimalDualInteriorPointSubproblem::solve(Statistics& statistics, const Opti
 
    // possibly update the barrier parameter
    DEBUG << "Current barrier parameter: " << this->barrier_parameter() << '\n';
-   this->update_barrier_parameter(problem, current_iterate);
+   this->update_barrier_parameter(problem, current_iterate, current_multipliers);
    statistics.set("barrier param.", this->barrier_parameter());
 
    // evaluate the functions at the current iterate
@@ -323,10 +323,11 @@ double PrimalDualInteriorPointSubproblem::compute_barrier_term_directional_deriv
    return directional_derivative;
 }
 
-void PrimalDualInteriorPointSubproblem::update_barrier_parameter(const OptimizationProblem& problem, Iterate& current_iterate) {
-   const bool barrier_parameter_updated = this->barrier_parameter_update_strategy.update_barrier_parameter(problem, current_iterate);
-   // the barrier parameter may have been changed earlier when entering restoration
-   this->subproblem_definition_changed = this->subproblem_definition_changed || barrier_parameter_updated;
+void PrimalDualInteriorPointSubproblem::update_barrier_parameter(const OptimizationProblem& problem, const Iterate& current_iterate,
+      const Multipliers& current_multipliers) {
+    const bool barrier_parameter_updated = this->barrier_parameter_update_strategy.update_barrier_parameter(problem, current_iterate, current_multipliers);
+    // the barrier parameter may have been changed earlier when entering restoration
+    this->subproblem_definition_changed = this->subproblem_definition_changed || barrier_parameter_updated;
 }
 
 // Section 3.9 in IPOPT paper

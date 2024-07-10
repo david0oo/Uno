@@ -110,6 +110,7 @@ void FeasibilityRestoration::switch_to_feasibility_problem(Statistics& statistic
 
    current_iterate.set_number_variables(this->feasibility_problem.number_variables);
    this->subproblem->set_elastic_variable_values(this->feasibility_problem, current_iterate);
+   this->compute_primal_dual_residuals(current_iterate);
    DEBUG2 << "Current iterate:\n" << current_iterate << '\n';
 
    if (Logger::level == INFO) statistics.print_current_line();
@@ -147,6 +148,7 @@ void FeasibilityRestoration::switch_to_optimality_phase(Iterate& current_iterate
    current_iterate.objective_multiplier = trial_iterate.objective_multiplier = 1.;
 
    this->subproblem->exit_feasibility_problem(this->optimality_problem, trial_iterate);
+   this->compute_primal_dual_residuals(current_iterate);
    this->switching_to_optimality_phase = true;
 }
 
@@ -176,7 +178,7 @@ bool FeasibilityRestoration::is_iterate_acceptable(Statistics& statistics, Itera
    }
    if (accept_iterate) {
       this->compute_primal_dual_residuals(trial_iterate);
-      trial_iterate.status = this->check_termination(trial_iterate);
+      trial_iterate.status = this->check_termination(this->current_problem(), trial_iterate);
       this->set_dual_residuals_statistics(statistics, trial_iterate);
    }
    ConstraintRelaxationStrategy::set_progress_statistics(statistics, trial_iterate);
@@ -184,7 +186,12 @@ bool FeasibilityRestoration::is_iterate_acceptable(Statistics& statistics, Itera
 }
 
 void FeasibilityRestoration::compute_primal_dual_residuals(Iterate& iterate) {
-   ConstraintRelaxationStrategy::compute_primal_dual_residuals(this->optimality_problem, this->feasibility_problem, iterate);
+   if (this->current_phase == Phase::OPTIMALITY) {
+      ConstraintRelaxationStrategy::compute_primal_dual_residuals(this->optimality_problem, iterate, iterate.multipliers);
+   }
+   else {
+      ConstraintRelaxationStrategy::compute_primal_dual_residuals(this->feasibility_problem, iterate, iterate.feasibility_multipliers);
+   }
 }
 
 const OptimizationProblem& FeasibilityRestoration::current_problem() const {
@@ -219,12 +226,7 @@ size_t FeasibilityRestoration::maximum_number_constraints() const {
 }
 
 void FeasibilityRestoration::set_dual_residuals_statistics(Statistics& statistics, const Iterate& iterate) const {
-   if (this->current_phase == Phase::OPTIMALITY) {
-      statistics.set("complementarity", iterate.residuals.complementarity);
-      statistics.set("stationarity", iterate.residuals.KKT_stationarity);
-   }
-   else {
-      statistics.set("complementarity", iterate.residuals.feasibility_complementarity);
-      statistics.set("stationarity", iterate.residuals.feasibility_stationarity);
-   }
+   statistics.set("stationarity", iterate.residuals.stationarity);
+   statistics.set("dual feas.", iterate.residuals.dual_feasibility);
+   statistics.set("complementarity", iterate.residuals.complementarity);
 }
