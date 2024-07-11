@@ -34,7 +34,6 @@ void Result::print(bool print_primal_dual_solution) const {
 
    std::cout << "┌ Stationarity residual:\t\t" << this->solution.residuals.stationarity << '\n';
    std::cout << "│ Primal feasibility residual:\t\t" << this->solution.residuals.primal_feasibility << '\n';
-   std::cout << "│ Dual feasibility residual:\t\t" << this->solution.residuals.dual_feasibility << '\n';
    std::cout << "└ Complementarity residual:\t\t" << this->solution.residuals.complementarity << '\n';
 
    std::cout << "┌ Infeasibility measure:\t\t" << this->solution.progress.infeasibility << '\n';

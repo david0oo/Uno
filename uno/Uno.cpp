@@ -38,7 +38,7 @@ Result Uno::solve(const Model& model, Iterate& current_iterate, const Options& o
          major_iterations++;
          statistics.start_new_line();
          statistics.set("iter", major_iterations);
-         DEBUG << "### Outer iteration " << major_iterations << '\n';
+         DEBUG << "\n### Outer iteration " << major_iterations << '\n';
 
          // compute an acceptable iterate by solving a subproblem at the current point
          this->globalization_mechanism.compute_next_iterate(statistics, model, current_iterate, trial_iterate);
@@ -81,10 +81,9 @@ Statistics Uno::create_statistics(const Model& model, const Options& options) {
    statistics.add_column("step norm", Statistics::double_width - 4, options.get_int("statistics_step_norm_column_order"));
    statistics.add_column("objective", Statistics::double_width - 4, options.get_int("statistics_objective_column_order"));
    if (model.is_constrained()) {
-      statistics.add_column("primal feas.", Statistics::double_width - 3, options.get_int("statistics_primal_feasibility_column_order"));
+      statistics.add_column("infeasibility", Statistics::double_width - 2, options.get_int("statistics_primal_feasibility_column_order"));
    }
    statistics.add_column("stationarity", Statistics::double_width - 3, options.get_int("statistics_stationarity_column_order"));
-   statistics.add_column("dual feas.", Statistics::double_width - 4, options.get_int("statistics_dual_feasibility_column_order"));
    statistics.add_column("complementarity", Statistics::double_width, options.get_int("statistics_complementarity_column_order"));
    statistics.add_column("status", Statistics::string_width, options.get_int("statistics_status_column_order"));
    return statistics;

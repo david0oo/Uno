@@ -13,7 +13,7 @@
 
 FeasibilityRestoration::FeasibilityRestoration(const Model& model, const Options& options) :
       // call delegating constructor
-      FeasibilityRestoration(model, OptimalityProblem(model),
+      FeasibilityRestoration(model, OptimalityProblem(model, options.get_double("unbounded_objective_threshold")),
             // create the (restoration phase) feasibility problem (objective multiplier = 0)
             l1RelaxedProblem(model, 0., options.get_double("l1_constraint_violation_coefficient"), 0., nullptr),
             options) {
@@ -187,9 +187,11 @@ bool FeasibilityRestoration::is_iterate_acceptable(Statistics& statistics, Itera
 
 void FeasibilityRestoration::compute_primal_dual_residuals(Iterate& iterate) {
    if (this->current_phase == Phase::OPTIMALITY) {
+      DEBUG << "Computing primal-dual residuals for original problem\n";
       ConstraintRelaxationStrategy::compute_primal_dual_residuals(this->optimality_problem, iterate, iterate.multipliers);
    }
    else {
+      DEBUG << "Computing primal-dual residuals for feasibility problem\n";
       ConstraintRelaxationStrategy::compute_primal_dual_residuals(this->feasibility_problem, iterate, iterate.feasibility_multipliers);
    }
 }
@@ -223,10 +225,4 @@ size_t FeasibilityRestoration::maximum_number_variables() const {
 
 size_t FeasibilityRestoration::maximum_number_constraints() const {
    return std::max(this->optimality_problem.number_constraints, this->feasibility_problem.number_constraints);
-}
-
-void FeasibilityRestoration::set_dual_residuals_statistics(Statistics& statistics, const Iterate& iterate) const {
-   statistics.set("stationarity", iterate.residuals.stationarity);
-   statistics.set("dual feas.", iterate.residuals.dual_feasibility);
-   statistics.set("complementarity", iterate.residuals.complementarity);
 }

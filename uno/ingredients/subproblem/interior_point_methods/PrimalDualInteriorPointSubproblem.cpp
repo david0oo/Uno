@@ -181,7 +181,13 @@ void PrimalDualInteriorPointSubproblem::solve(Statistics& statistics, const Opti
 
    // possibly update the barrier parameter
    DEBUG << "Current barrier parameter: " << this->barrier_parameter() << '\n';
-   this->update_barrier_parameter(problem, current_iterate, current_multipliers);
+   if (not this->first_feasibility_iteration) {
+      this->update_barrier_parameter(problem, current_iterate, current_multipliers);
+   }
+   else {
+      this->first_feasibility_iteration = false;
+   }
+
    statistics.set("barrier param.", this->barrier_parameter());
 
    // evaluate the functions at the current iterate
@@ -236,7 +242,7 @@ void PrimalDualInteriorPointSubproblem::initialize_feasibility_problem(const l1R
 
 // set the elastic variables of the current iterate
 void PrimalDualInteriorPointSubproblem::set_elastic_variable_values(const l1RelaxedProblem& problem, Iterate& current_iterate) {
-   DEBUG << "Setting the elastic variables\n";
+   DEBUG << "IPM: setting the elastic variables and their duals\n";
    // c(x) - p + n = 0
    // analytical expression for p and n:
    // (mu_over_rho - jacobian_coefficient*this->barrier_constraints[j] + std::sqrt(radical))/2.

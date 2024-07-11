@@ -68,7 +68,6 @@ protected:
    const double loose_tolerance; /*!< Loose tolerance of the termination criteria */
    size_t loose_tolerance_consecutive_iterations{0};
    const size_t loose_tolerance_consecutive_iteration_threshold;
-   const double unbounded_objective_threshold;
 
    void set_objective_measure(Iterate& iterate) const;
    void set_infeasibility_measure(Iterate& iterate) const;
@@ -83,14 +82,14 @@ protected:
    [[nodiscard]] static double stationarity_error(const LagrangianGradient<double>& lagrangian_gradient, double objective_multiplier,
          Norm residual_norm);
 
-   [[nodiscard]] double compute_stationarity_scaling(const Multipliers& multipliers) const;
-   [[nodiscard]] double compute_complementarity_scaling(const Multipliers& multipliers) const;
+   [[nodiscard]] double compute_stationarity_scaling(const OptimizationProblem& problem, const Multipliers& multipliers) const;
+   [[nodiscard]] double compute_complementarity_scaling(const OptimizationProblem& problem, const Multipliers& multipliers) const;
 
    [[nodiscard]] TerminationStatus check_termination(const OptimizationProblem& problem, Iterate& current_iterate);
 
    void set_statistics(Statistics& statistics, const Iterate& iterate) const;
    void set_progress_statistics(Statistics& statistics, const Iterate& iterate) const;
-   virtual void set_dual_residuals_statistics(Statistics& statistics, const Iterate& iterate) const = 0;
+   void set_dual_residuals_statistics(Statistics& statistics, const Iterate& iterate) const;
 };
 
 #endif //UNO_CONSTRAINTRELAXATIONSTRATEGY_H
