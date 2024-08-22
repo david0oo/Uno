@@ -20,9 +20,10 @@ l1Relaxation::l1Relaxation(const Model& model, const Options& options) :
       // call delegating constructor
       l1Relaxation(model,
             // create the l1 feasibility problem (objective multiplier = 0)
-            l1RelaxedProblem(model, 0., options.get_double("l1_constraint_violation_coefficient")),
+            l1RelaxedProblem(model, 0., options.get_double("l1_constraint_violation_coefficient"), 0., nullptr),
             // create the l1 relaxed problem
-            l1RelaxedProblem(model, options.get_double("l1_relaxation_initial_parameter"), options.get_double("l1_constraint_violation_coefficient")),
+            l1RelaxedProblem(model, options.get_double("l1_relaxation_initial_parameter"), options.get_double("l1_constraint_violation_coefficient"),
+               0., nullptr),
             options) {
 }
 
@@ -166,7 +167,7 @@ void l1Relaxation::decrease_parameter_aggressively(Iterate& current_iterate, con
 // measure that combines KKT error and complementarity error
 double l1Relaxation::compute_infeasible_dual_error(Iterate& current_iterate) {
    // stationarity error
-   this->evaluate_lagrangian_gradient(current_iterate, this->trial_multipliers);
+   this->l1_relaxed_problem.evaluate_lagrangian_gradient(current_iterate, this->trial_multipliers);
    double error = norm_1(current_iterate.lagrangian_gradient.constraints_contribution);
 
    // complementarity error
@@ -246,7 +247,7 @@ bool l1Relaxation::is_iterate_acceptable(Statistics& statistics, Iterate& curren
    if (accept_iterate) {
       this->check_exact_relaxation(trial_iterate);
       this->compute_primal_dual_residuals(trial_iterate);
-      trial_iterate.status = this->check_termination(trial_iterate);
+      trial_iterate.status = this->check_termination(this->l1_relaxed_problem, trial_iterate);
       this->set_dual_residuals_statistics(statistics, trial_iterate);
    }
    this->set_progress_statistics(statistics, trial_iterate);
@@ -254,7 +255,7 @@ bool l1Relaxation::is_iterate_acceptable(Statistics& statistics, Iterate& curren
 }
 
 void l1Relaxation::compute_primal_dual_residuals(Iterate& iterate) {
-   ConstraintRelaxationStrategy::compute_primal_dual_residuals(this->l1_relaxed_problem, this->feasibility_problem, iterate);
+   //ConstraintRelaxationStrategy::compute_primal_dual_residuals(this->l1_relaxed_problem, this->feasibility_problem, iterate);
 }
 
 void l1Relaxation::evaluate_progress_measures(Iterate& iterate) const {
@@ -286,9 +287,3 @@ void l1Relaxation::check_exact_relaxation(Iterate& iterate) const {
       DEBUG << "The value of the penalty parameter is consistent with an exact relaxation\n\n";
    }
 }
-
-void l1Relaxation::set_dual_residuals_statistics(Statistics& statistics, const Iterate& iterate) const {
-   statistics.set("complementarity", iterate.residuals.complementarity);
-   statistics.set("stationarity", iterate.residuals.KKT_stationarity);
-}
-

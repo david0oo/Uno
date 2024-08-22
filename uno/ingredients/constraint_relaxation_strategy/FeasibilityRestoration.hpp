@@ -41,6 +41,7 @@ private:
    const bool switch_to_optimality_requires_linearized_feasibility;
    bool switching_to_optimality_phase{false};
    ProgressMeasures reference_optimality_progress{};
+   Vector<double> reference_optimality_primals{};
 
    // delegating constructor
    FeasibilityRestoration(const Model& model, OptimalityProblem&& optimality_problem, l1RelaxedProblem&& feasibility_problem, const Options& options);
@@ -54,8 +55,6 @@ private:
    [[nodiscard]] ProgressMeasures compute_predicted_reduction_models(Iterate& current_iterate, const Direction& direction, double step_length);
    [[nodiscard]] bool can_switch_to_optimality_phase(const Iterate& current_iterate, const Iterate& trial_iterate, const Direction& direction,
          double step_length);
-
-   void set_dual_residuals_statistics(Statistics& statistics, const Iterate& iterate) const override;
 };
 
 #endif //UNO_FEASIBILITYRESTORATION_H

@@ -16,6 +16,7 @@ public:
    void set_initial_point(const Vector<double>& point) override;
    void initialize_feasibility_problem(const l1RelaxedProblem& problem, Iterate& current_iterate) override;
    void set_elastic_variable_values(const l1RelaxedProblem& problem, Iterate& current_iterate) override;
+   [[nodiscard]] double proximal_coefficient(const Iterate& current_iterate) const override;
    void exit_feasibility_problem(const OptimizationProblem& problem, Iterate& trial_iterate) override;
 
    void set_auxiliary_measure(const Model& model, Iterate& iterate) override;
