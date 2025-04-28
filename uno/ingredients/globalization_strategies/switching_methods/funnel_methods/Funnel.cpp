@@ -22,7 +22,7 @@ namespace uno {
 
    /* check if the trial iterate is inside the current funnel */
    bool Funnel::acceptable(double trial_infeasibility) const {
-      return (trial_infeasibility <= this->width);
+      return (trial_infeasibility <= this->margin * this->width);//(trial_infeasibility <= this->width);
    }
 
    /* check if the funnel sufficient decrease condition is satisfied */

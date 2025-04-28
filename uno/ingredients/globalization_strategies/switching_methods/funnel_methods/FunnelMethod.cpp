@@ -54,7 +54,7 @@ namespace uno {
                const double objective_actual_reduction = this->compute_actual_objective_reduction(current_merit, trial_merit);
                DEBUG << "Unconstrained actual reduction = " << objective_actual_reduction << '\n';
                if (this->armijo_sufficient_decrease(merit_predicted_reduction, objective_actual_reduction)) {
-                  DEBUG << "Trial iterate (f-type) was ACCEPTED by satisfying Armijo condition\n";
+                  DEBUG << "Trial iterate (f-type) was accepted by satisfying Armijo condition\n";
                   accept = true;
                }
                else { // switching condition holds, but not Armijo condition
@@ -64,10 +64,10 @@ namespace uno {
             }
             // h-type step
             else if (this->funnel.sufficient_decrease_condition(trial_progress.infeasibility)) {
-               DEBUG << "\t\tTrial iterate  (h-type) ACCEPTED by violating the switching condition ...\n";
+               DEBUG << "Trial iterate (h-type) was accepted by violating the switching condition\n";
                accept = true;
 
-               DEBUG << "\t\tEntering funnel reduction mechanism\n";
+               DEBUG << "Entering funnel reduction mechanism\n";
                this->funnel.update(current_progress.infeasibility, trial_progress.infeasibility);
                statistics.set("funnel width", this->funnel.current_width());
                scenario = "h-type";

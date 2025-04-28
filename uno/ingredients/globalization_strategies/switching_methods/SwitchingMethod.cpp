@@ -30,6 +30,7 @@ namespace uno {
          const ProgressMeasures& trial_progress, const ProgressMeasures& predicted_reduction, double objective_multiplier) {
       this->set_statistics(statistics);
       const bool solving_feasibility_problem = (objective_multiplier == 0.);
+      std::cout << "Current infeasibility: " << current_progress.infeasibility << std::endl;
       if (solving_feasibility_problem) {
          return this->is_feasibility_iterate_acceptable(statistics, current_progress, trial_progress, predicted_reduction);
       }
@@ -46,7 +47,8 @@ namespace uno {
       const double trial_merit = trial_progress.infeasibility + trial_progress.auxiliary;
       const double predicted_merit_reduction = predicted_reduction.infeasibility + predicted_reduction.auxiliary;
       const double actual_merit_reduction = current_merit - trial_merit;
-      DEBUG << "Current merit = " << current_merit << '\n';
+      DEBUG << "Current: (infeasibility, objective + auxiliary) = (" << current_merit << ", - )\n";
+      // DEBUG << "Current merit = " << current_merit << '\n';
       DEBUG << "Trial merit = " << trial_merit << '\n';
       DEBUG << "Predicted merit reduction = " << predicted_merit_reduction << '\n';
       DEBUG << "Actual merit reduction = " << actual_merit_reduction << '\n';
